@@ -1,0 +1,35 @@
+echo off
+
+:: main logic
+:main
+setlocal
+    set PATH=%PATH%;C:\Program Files (x86)\IBM\WMQFTE\bin;F:\Program Files (x86)\IBM\WMQFTE\bin;C:\Program Files\IBM\WMQFTE\tools\bin
+
+
+    set _coor_qmgr_={EnvQMGR}
+    set _agent_name_={AgentName}
+    set _agent_qmgr_={DataQMGR}
+    
+call :extract_monitor {monitornameReplaceME}
+call :extract_monitor {monitorname2ReplaceME}
+
+	
+    
+    pause
+endlocal & exit /b 0
+goto :eof
+
+:extract_monitor
+setlocal
+    if [%1] NEQ [] (set _monitor_name_=%1)
+    
+    if not defined _monitor_name_ (
+        echo [%0-W]: "monitor name" is not defined, command was not executed.
+        echo [%0-W]: Please provide either _monitor_name_ environment variable or as an command line argument.
+        echo [%0-W]:     ENV variable: set _monitor_name_=MY_FIRST_MONITOR
+        echo [%0-W]:     CLI argument: call :extract_monitor MY_FIRST_MONITOR
+        endlocal & exit /b 1
+    )
+    
+    cmd /c fteListMonitors -p %_coor_qmgr_% -ma %_agent_name_% -mn %_monitor_name_% -ox %_monitor_name_%.xml
+endlocal & exit /b 0
