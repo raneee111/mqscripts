@@ -1,0 +1,66 @@
+#!/bin/sh
+
+export PATH=$PATH:/opt/mqm/bin
+
+v_coor="$1"
+
+if [[ -z "$v_coor" ]]; then
+    echo "Usage: `basename $0` COOR-QMGR"
+    exit 1
+fi
+
+function extract_monitors()
+{
+    # exports all monitors from coordination qmqr "v_coor"
+    fteListMonitors -p "$v_coor" | tail -n +4 | awk '{ print $1 " " $2 }' |
+    while read -r v_line; do
+        v_agent=$(echo $v_line | awk '{ print $1 }')
+        v_monitor=$(echo $v_line | awk '{ print $2 }')
+
+        fteListMonitors -p "$v_coor" -ma "$v_agent" -mn "$v_monitor" -ox "$v_agent.$v_monitor.xml"
+    done
+}
+
+function archive_monitors()
+{
+    v_timestamp="$(date -u '+%Y%m%d-%H%M%S-%Z')"
+
+    # creates a tar.gz archive containing all exported monitor definitions.
+    tar -zcf "$v_archive_dir/monitors-export-$v_coor-$v_timestamp.tar.gz" *
+}
+
+
+function load_monitors()
+{
+    # reload all monitors from XML files (delete & create)
+    ls *.xml | awk -F\. '{ print $1 " " $2 }' |
+    while read -r v_line; do
+        v_agent=$(echo $v_line | awk '{ print $1 }')
+        v_monitor=$(echo $v_line | awk '{ print $2 }')
+
+        nohup fteCreateMonitor -p "$v_coor" -mm {dataqmgrReplaceMe} -ma "$v_agent" -mn "$v_monitor" -ix "$v_agent.$v_monitor.xml" &> "$v_agent.$v_monitor.log" &
+    done
+}
+
+
+
+
+#
+# Main Logic
+#
+
+v_root_dir="$(pwd)"
+v_export_dir="$v_root_dir/monitors/exportRan_$v_coor"
+v_archive_dir="$v_root_dir/monitors"
+
+mkdir -p "$v_export_dir"
+mkdir -p "$v_archive_dir"
+
+cd "$v_export_dir"
+
+extract_monitors
+#archive_monitors
+#load_monitors
+
+cd "$v_root_dir"
+exit $?
