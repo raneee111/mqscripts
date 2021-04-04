@@ -1,0 +1,35 @@
+@echo off
+
+rem main logic
+:main
+setlocal
+    rem environment variables
+    set _coor_qmgr_={EnvQMGR}
+    set _agent_name_={AgentName}
+    set _agent_qmgr_={DataQMGR}
+
+    set PATH=%PATH%;C:\Program Files (x86)\IBM\WMQFTE\bin;F:\Program Files (x86)\IBM\WMQFTE\bin;C:\Program Files\IBM\WMQFTE\tools\bin
+   
+
+call :restart_monitor {monitornameReplaceME}
+		  
+    pause
+endlocal & exit /b 0
+
+rem sub-routines
+goto :eof
+
+:restart_monitor
+setlocal
+    if [%1] NEQ [] (set _monitor_name_=%1)
+    
+    if not defined _monitor_name_ (
+        echo [%0-W]: "monitor name" is not defined, command was not executed.
+        echo [%0-W]: Please provide either _monitor_name_ environment variable or as an command line argument.
+        echo [%0-W]:     ENV variable: set _monitor_name_=MY_FIRST_MONITOR
+        echo [%0-W]:     CLI argument: call :restart_monitor MY_FIRST_MONITOR
+        endlocal & exit /b 1
+    )
+
+    cmd /c fteCreateMonitor -p %_coor_qmgr_% -ma %_agent_name_% -mm %_agent_qmgr_% -ix %_monitor_name_%.xml
+endlocal & exit /b 0
